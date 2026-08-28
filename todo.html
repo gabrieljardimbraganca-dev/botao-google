@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .todos-list {
+            list-style: none;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .todo-item:hover {
+            background: #f0f1f3;
+            transform: translateX(5px);
+        }
+
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .todo-text {
+            flex: 1;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .delete-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: #ff5252;
+            transform: scale(1.05);
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-size: 18px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .clear-all-btn {
+            width: 100%;
+            margin-top: 15px;
+            background: #ff6b6b;
+        }
+
+        .clear-all-btn:hover {
+            background: #ff5252;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 Minha To-Do List</h1>
+        
+        <div class="input-group">
+            <input 
+                type="text" 
+                id="todoInput" 
+                placeholder="Adicione uma nova tarefa..."
+                onkeypress="adicionarSeEnter(event)"
+            >
+            <button onclick="adicionarTarefa()">Adicionar</button>
+        </div>
+
+        <div id="todosList">
+            <div class="empty-message">Nenhuma tarefa ainda. Comece adicionando uma! 🚀</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-number" id="totalTarefas">0</div>
+                <div class="stat-label">Total</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number" id="tarefasConcluidas">0</div>
+                <div class="stat-label">Concluídas</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number" id="tarefasPendentes">0</div>
+                <div class="stat-label">Pendentes</div>
+            </div>
+        </div>
+
+        <button class="clear-all-btn" onclick="limparTodas()">🗑️ Limpar Todas</button>
+    </div>
+
+    <script>
+        // Chave para armazenar no localStorage
+        const STORAGE_KEY = 'todoList';
+
+        // Inicializar ao carregar a página
+        window.addEventListener('DOMContentLoaded', carregarTarefas);
+
+        // Adicionar tarefa com Enter
+        function adicionarSeEnter(event) {
+            if (event.key === 'Enter') {
+                adicionarTarefa();
+            }
+        }
+
+        // Adicionar nova tarefa
+        function adicionarTarefa() {
+            const input = document.getElementById('todoInput');
+            const texto = input.value.trim();
+
+            if (texto === '') {
+                alert('Por favor, digite uma tarefa!');
+                return;
+            }
+
+            // Criar objeto da tarefa
+            const tarefa = {
+                id: Date.now(),
+                texto: texto,
+                concluida: false
+            };
+
+            // Obter tarefas do localStorage
+            let tarefas = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+            // Adicionar nova tarefa
+            tarefas.push(tarefa);
+
+            // Salvar no localStorage
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tarefas));
+
+            // Limpar input
+            input.value = '';
+            input.focus();
+
+            // Renderizar tarefas
+            renderizarTarefas();
+        }
+
+        // Alternar status da tarefa
+        function alternarStatus(id) {
+            let tarefas = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            
+            tarefas = tarefas.map(tarefa => {
+                if (tarefa.id === id) {
+                    tarefa.concluida = !tarefa.concluida;
+                }
+                return tarefa;
+            });
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tarefas));
+            renderizarTarefas();
+        }
+
+        // Deletar tarefa
+        function deletarTarefa(id) {
+            let tarefas = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            
+            tarefas = tarefas.filter(tarefa => tarefa.id !== id);
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tarefas));
+            renderizarTarefas();
+        }
+
+        // Limpar todas as tarefas
+        function limparTodas() {
+            if (confirm('Tem certeza que deseja remover TODAS as tarefas?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                renderizarTarefas();
+            }
+        }
+
+        // Renderizar tarefas na tela
+        function renderizarTarefas() {
+            const tarefas = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            const container = document.getElementById('todosList');
+
+            if (tarefas.length === 0) {
+                container.innerHTML = '<div class="empty-message">Nenhuma tarefa ainda. Comece adicionando uma! 🚀</div>';
+            } else {
+                container.innerHTML = '<ul class="todos-list">' + 
+                    tarefas.map(tarefa => `
+                        <li class="todo-item ${tarefa.concluida ? 'completed' : ''}">
+                            <input 
+                                type="checkbox" 
+                                ${tarefa.concluida ? 'checked' : ''}
+                                onchange="alternarStatus(${tarefa.id})"
+                            >
+                            <span class="todo-text">${tarefa.texto}</span>
+                            <button class="delete-btn" onclick="deletarTarefa(${tarefa.id})">Deletar</button>
+                        </li>
+                    `).join('') +
+                    '</ul>';
+            }
+
+            atualizarEstatisticas(tarefas);
+        }
+
+        // Atualizar estatísticas
+        function atualizarEstatisticas(tarefas) {
+            const concluidas = tarefas.filter(t => t.concluida).length;
+            const pendentes = tarefas.length - concluidas;
+
+            document.getElementById('totalTarefas').textContent = tarefas.length;
+            document.getElementById('tarefasConcluidas').textContent = concluidas;
+            document.getElementById('tarefasPendentes').textContent = pendentes;
+        }
+
+        // Carregar tarefas do localStorage
+        function carregarTarefas() {
+            renderizarTarefas();
+        }
+    </script>
+</body>
+</html>
